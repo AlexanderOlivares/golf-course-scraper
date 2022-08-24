@@ -1,76 +1,106 @@
-import os
-import re
-import time
-import json
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
-from env_conifgs import dev_config as config
-# if "PRODUCTION" in os.environ:
-#     from env_configs import prod_config as config
-# else:
-#     from env_configs import dev_config as config
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+import os
+import time
+import sentry_sdk
 
-driver = config.driver
+sentry_sdk.init(
+    dsn="https://267bf5c2907c4df6a33e064e046120e8@o1142418.ingest.sentry.io/6683044",
+    traces_sample_rate=1.0
+)
 
-driver.get("https://www.codewars.com/users/AlexanderOlivares/stats")
-time.sleep(5)
+if "PRODUCTION" in os.environ:
+    from env_conifgs import prod_config as config
+else:
+    from env_conifgs import dev_config as config
 
-WebDriverWait(driver, 10).until(
-    EC.presence_of_element_located((By.CLASS_NAME, "stat")))
+try:
+    driver = config.driver
 
-codewars_stats = driver.find_elements_by_class_name('stat')
+    driver.get("https://www.codewars.com/users/AlexanderOlivares/stats")
 
-codewars_total_completed_challenges = None
-codewars_honor_percentile = None
+    time.sleep(5)
 
-for stat in codewars_stats:
-    stat_text = stat.text
-    descrip, value = stat_text.split(":")
-    if descrip == "Total Completed Kata":
-        codewars_total_completed_challenges = value
-    if descrip == "Honor Percentile":
-        codewars_honor_percentile = value
+    WebDriverWait(driver, 20).until(
+        EC.presence_of_element_located((By.CLASS_NAME, "stat")))
 
+    codewars_stats = driver.find_elements_by_class_name('stat')
 
-print(codewars_total_completed_challenges)
-print(codewars_honor_percentile)
+    codewars_total_completed_challenges = None
+    codewars_honor_percentile = None
 
+    for stat in codewars_stats:
+        stat_text = stat.text
+        descrip, value = stat_text.split(":")
+        if descrip == "Total Completed Kata":
+            codewars_total_completed_challenges = value
+        if descrip == "Honor Percentile":
+            codewars_honor_percentile = value
 
-driver.execute_script("window.open('');")
-driver.switch_to.window(driver.window_handles[1])
-driver.get("https://edabit.com/user/2Qk2mFu9HBFzrB24i")
+    print(
+        f'Codewars challenges completed: {codewars_total_completed_challenges}')
+    print(f'Codewars honor percentile: {codewars_honor_percentile}')
 
-time.sleep(5)
+    driver.execute_script("window.open('');")
+    driver.switch_to.window(driver.window_handles[1])
+    driver.get("https://edabit.com/user/2Qk2mFu9HBFzrB24i")
 
-# WebDriverWait(driver, 20).until(
-#     EC.presence_of_element_located((By.XPATH, "/html/body/div/div/main/div/div/div[1]/div[1]/div[3]/div/div[1]/div[1]")))
+    time.sleep(5)
 
-edabit_xp = driver.find_element_by_xpath(
-    "/html/body/div/div/main/div/div/div[1]/div[1]/div[3]/div/div[1]/div[1]").text
+    WebDriverWait(driver, 20).until(
+        EC.presence_of_element_located((By.XPATH, "/html/body/div/div/main/div/div/div[1]/div[1]/div[3]/div/div[1]/div[1]")))
 
+    edabit_xp = driver.find_element_by_xpath(
+        "/html/body/div/div/main/div/div/div[1]/div[1]/div[3]/div/div[1]/div[1]").text
 
-edabit_challenge_count = 10
-load_more_button = driver.find_element_by_xpath(
-    "/html/body/div/div/main/div/div/div[2]/div/div[2]/div[1]/div/button/span")
+    print(f'edabit xp: {edabit_xp}')
 
-while load_more_button:
     try:
-        load_more_button.click()
-        # loaded_challenges = driver.find_elements_by_class_name("listitem")
-        # print(len(loaded_challenges))
-        edabit_challenge_count += 10
-        time.sleep(5)
-        print(edabit_challenge_count)
-        load_more_button = driver.find_element_by_xpath(
-            "/html/body/div/div/main/div/div/div[2]/div/div[2]/div[1]/div/button/span")
-    except NoSuchElementException as e:
-        print(e)
-        break
+        cur = config.cursor
+        conn = config.conn
 
+        create_table = (
+            f"""
+            CREATE TABLE IF NOT EXISTS code_challenge_stats(
+            codewars_completed VARCHAR(255),
+            codewars_honor VARCHAR(255),
+            edabit_xp VARCHAR(255)
+            )
+            """
+        )
 
-print(edabit_xp)
-print(edabit_challenge_count)
+        cur.execute(create_table)
+        conn.commit()
 
-driver.quit()
+        insert_command = f'INSERT INTO code_challenge_stats (codewars_completed, codewars_honor, edabit_xp) VALUES (%s, %s, %s)'
+        insert_values = (codewars_total_completed_challenges,
+                         codewars_honor_percentile, edabit_xp)
+
+        cur.execute(insert_command, insert_values)
+        conn.commit()
+        print('db command executed')
+
+    except Exception as e:
+        print(str(e))
+        sentry_sdk.capture_exception(e)
+    finally:
+        if cur is not None:
+            print('cursor was open')
+            cur.close()
+        if conn is not None:
+            print('connection was successful')
+
+except NoSuchElementException:
+    print(str(NoSuchElementException))
+    sentry_sdk.capture_exception(NoSuchElementException)
+    driver.quit()
+
+except Exception as e:
+    print(str(e))
+    sentry_sdk.capture_exception(e)
+    driver.quit()
+
+finally:
+    driver.quit()
