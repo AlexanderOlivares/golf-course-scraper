@@ -6,7 +6,7 @@ path = os.environ.get('LOCAL_CHROMEDRIVER_PATH')
 local_driver = driver = webdriver.Chrome(path)
 
 host = os.environ.get('scraper_hostname')
-database = os.environ.get('code_challenge_stat_database')
+database = 'golf_stat_tracker'
 user = os.environ.get('scraper_username')
 password = os.environ.get('scraper_password')
 port = os.environ.get('scraper_port')
