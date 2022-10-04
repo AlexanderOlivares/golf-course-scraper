@@ -2,7 +2,7 @@
 def create_table(table_name):
     return f"""
             CREATE TABLE IF NOT EXISTS {table_name}(
-                course_id VARCHAR(255) NOT NULL PRIMARY KEY,
+                course_id UUID PRIMARY KEY NOT NULL DEFAULT uuid_generate_v4(),
                 course_name VARCHAR(255) NOT NULL,
                 is_nine_hole_course BOOLEAN,
                 blue_par_front VARCHAR[],
