@@ -21,6 +21,11 @@ def scrape_golf_course(course_urls):
 
         for i in range(len(course_urls)):
 
+            course_locations = course_urls[i].split("/")
+            course_country = course_locations[4]
+            course_state = course_locations[5]
+            course_city = course_locations[6]
+
             driver.get(course_urls[i])
 
             WebDriverWait(driver, 5).until(
@@ -30,7 +35,6 @@ def scrape_golf_course(course_urls):
 
             course_scraped_text_list_by_newline = get_course[0].text.split(
                 "\n")
-            print(course_scraped_text_list_by_newline)
 
             course_deatils = {
                 "course_name": "",
@@ -110,8 +114,8 @@ def scrape_golf_course(course_urls):
                 psycopg2.extras.register_uuid()
 
                 # non specific to tee color
-                cols_to_insert = "course_id, course_name, is_nine_hole_course"
-                vals_to_insert = [course_id, course_deatils["course_name"],
+                cols_to_insert = "course_id, course_name, course_country, course_state, course_city, is_nine_hole_course"
+                vals_to_insert = [course_id, course_deatils["course_name"], course_country, course_state, course_city,
                                   course_deatils["is_nine_hole_course"]]
 
                 # gather the columns that are specific to tee color

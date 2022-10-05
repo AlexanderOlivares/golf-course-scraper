@@ -4,6 +4,9 @@ def create_table(table_name):
             CREATE TABLE IF NOT EXISTS {table_name}(
                 course_id UUID PRIMARY KEY NOT NULL DEFAULT uuid_generate_v4(),
                 course_name VARCHAR(255) NOT NULL,
+                course_country VARCHAR,
+                course_city VARCHAR,
+                course_state VARCHAR,
                 is_nine_hole_course BOOLEAN,
                 blue_par_front VARCHAR[],
                 blue_par_back VARCHAR[],
