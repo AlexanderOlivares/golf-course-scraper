@@ -93,8 +93,8 @@ def scrape_golf_course(course_urls):
                         f"hole_yardage_{front_or_back_nine}"] = newline_word_list[2:-3]
                     course_deatils[current_tee_color][
                         f"total_yardage_{front_or_back_nine}"] = newline_word_list[11]
-                    course_deatils[current_tee_color]["rating"] = newline_word_list[12]
-                    course_deatils[current_tee_color]["slope"] = newline_word_list[13]
+                    course_deatils[current_tee_color]["rating"] = newline_word_list[13]
+                    course_deatils[current_tee_color]["slope"] = newline_word_list[12]
                 if newline_word_list[0] == "Par":
                     course_deatils[current_tee_color][f"par_{front_or_back_nine}"] = newline_word_list[1:]
                 if newline_word_list[0] == "S.I.":
@@ -158,6 +158,7 @@ def scrape_golf_course(course_urls):
 
 
 # add urls to scrape to list
-courses_to_scrape = [""]
+courses_to_scrape = [
+    "https://courses.swingu.com/courses/United-States-of-America/Texas/Burnet/Delaware-Springs-Golf-Course/44545"]
 
 scrape_golf_course(courses_to_scrape)
